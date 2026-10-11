@@ -1,56 +1,92 @@
-# issue-function — MCP server that creates GitHub issues
+# issue-function — GitHub issue management over MCP
 
-One tool: `create_issue(issue_title, issue_text)`. Creates an issue in the repo named
-by `GITHUB_REPO` and returns its URL.
+Five tools against the repo named by `GITHUB_REPO`: `create_issue`,
+`list_open_issues`, `get_issue`, `close_issue`, `add_label`.
 
 ## Configuration
 
-`.env` next to `main.py`:
+Copy the template and fill it in:
+
+```bash
+copy .env.example .env
+```
 
 ```text
 ACCESS_TOKEN=github_pat_xxx
 GITHUB_REPO=owner/repo
 ```
 
-Install and verify:
+`.env` is read from next to `main.py`, so the server works from any working
+directory. A missing variable fails the call with a named error rather than a
+stack trace.
+
+## Install, test, verify
 
 ```bash
-uv sync
-.venv\Scripts\python.exe verify_mcp.py     # handshake + prints the tool list
+uv sync --extra dev
+.venv\Scripts\python.exe -m pytest -q     # 34 tests
+.venv\Scripts\python.exe verify_mcp.py    # real stdio handshake + contract
 ```
+
+`verify_mcp.py` starts `main.py` as a subprocess, runs `initialize` and
+`tools/list`, and asserts that all five tools are advertised with the four
+annotations each. It exits non-zero on any mismatch.
 
 ## Register with pi (or any MCP host)
 
-Add to `C:\Users\archi\.config\mcp\mcp.json` (top-level key is `mcpServers`):
+Add to your host's `mcp.json` (top-level key is `mcpServers`), with
+`<repo>` set to this repository's checkout path:
 
 ```json
 {
   "mcpServers": {
     "issue-function": {
-      "command": "C:\\Users\\archi\\Desktop\\Testing\\Code\\MCP\\Issue_Function\\.venv\\Scripts\\python.exe",
-      "args": [
-        "C:\\Users\\archi\\Desktop\\Testing\\Code\\MCP\\Issue_Function\\main.py"
-      ]
+      "command": "<repo>\\.venv\\Scripts\\python.exe",
+      "args": ["<repo>\\main.py"]
     }
   }
 }
 ```
 
-Then run **`/reload`** in pi. Confirm with `mcp({})`: `issue-function (1 tool)`.
+Then run **`/reload`** in pi. Confirm with `mcp({})`: `issue-function (5 tools)`.
 
-## Use
+## Tools
 
-In pi the tool appears as `issue-function_create_issue`, or call it through the gateway:
+Every tool returns `{"success": true, ...}` on success. Annotations are what the
+host shows you before it calls something, so read them:
 
-```js
-mcp({ server: "issue-function" })                                  // list tools
-mcp({ tool: "issue-function_create_issue",
-     args: { issue_title: "Bug: login fails", issue_text: "Steps to reproduce…" } })
-```
+| Tool | readOnly | destructive | idempotent |
+|---|---|---|---|
+| `create_issue(issue_title, issue_text, labels?, assignees?)` | no | yes | no |
+| `list_open_issues(limit=10, labels?, assignee?)` | yes | no | yes |
+| `get_issue(issue_number)` | yes | no | yes |
+| `close_issue(issue_number, state_reason="completed")` | no | yes | yes |
+| `add_label(issue_number, label)` | no | yes | yes |
+
+`state_reason` is `"completed"` or `"not_planned"`. `limit` is 1–100.
+`add_label` creates the label on the repo if it does not exist there yet.
+
+## Behaviour worth knowing
+
+- **Pull requests are excluded** from `list_open_issues`. GitHub's issues
+  endpoint returns them alongside issues; they are filtered out so the tool means
+  what its name says.
+- **No filter means no filter.** Omitting `labels`/`assignee` sends `None` to
+  GitHub, not an empty list or empty string — those would ask GitHub for issues
+  matching nothing.
+- **Idempotency is real, not claimed.** `close_issue` and `add_label` read the
+  issue first and return the existing state instead of re-writing it.
+- **Errors are typed.** Failures raise `MCPError`, which the SDK forwards as a
+  JSON-RPC error: 4xx from GitHub becomes `INVALID_PARAMS` (-32602), 5xx becomes
+  `INTERNAL_ERROR` (-32603). The HTTP status is preserved in `data.status`. Any
+  other exception is reported as an `isError` result rather than crashing the
+  server.
 
 ## Token permissions
 
 Fine-grained PAT with **Issues** (read/write) and **Metadata** (always required),
-scoped to `GITHUB_REPO`.
+scoped to `GITHUB_REPO`. See `.env.example`.
 
-**Note:** the server only *creates* issues. It cannot close or delete them. Adding cleanup as a repeatable tool requires a second `@mcp.tool()`. This is just an example of a working MCP server, not a full-featured GitHub client.
+## License
+
+MIT — see `LICENSE`.
