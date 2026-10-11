@@ -74,7 +74,7 @@ host shows you before it calls something, so read them:
 - **No filter means no filter.** Omitting `labels`/`assignee` sends `None` to
   GitHub, not an empty list or empty string — those would ask GitHub for issues
   matching nothing.
-- **Idempotency is real, not claimed.** `close_issue` and `add_label` read the
+- **Idempotency is real.** `close_issue` and `add_label` read the
   issue first and return the existing state instead of re-writing it.
 - **Errors are typed.** Failures raise `MCPError`, which the SDK forwards as a
   JSON-RPC error: 4xx from GitHub becomes `INVALID_PARAMS` (-32602), 5xx becomes
