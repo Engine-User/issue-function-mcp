@@ -91,4 +91,4 @@ scoped to `GITHUB_REPO`. See `.env.example`.
 
 MIT — see `LICENSE`.
 
-[![M8ven Score](https://m8ven.ai/badge/mcp/engine-user-issue-function-mcp-hne13m?v=8016310ae21a52b17b682fdb51655c46)](https://m8ven.ai/mcp/engine-user-issue-function-mcp-hne13m?s=readme)
+[![M8ven Score](https://m8ven.ai/badge/mcp/engine-user-issue-function-mcp-hne13m?v=8016310ae21a52b17b682fdb51655c46)](https://m8ven.ai/mcp/engine-user-issue-function-mcp-hne13m?s=readme?variant=verified)
