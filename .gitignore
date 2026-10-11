@@ -15,7 +15,14 @@ venv/
 .mypy_cache/
 .ruff_cache/
 
+# Coverage artifacts
+.coverage
+coverage.xml
+htmlcov/
+
 # Secrets
+# .env holds a live GitHub PAT. Never relax this - `!.env.example` is the only
+# .env file that belongs in the repo, and it must stay below this rule.
 .env
 .env.*
 !.env.example
@@ -23,6 +30,10 @@ venv/
 # OS / editor cruft
 .DS_Store
 Thumbs.db
+
+# Editor settings are per-machine; .vscode/mcp.json is shared config and is tracked.
+.vscode/*
+!.vscode/mcp.json
 
 # Local notes & generated diagrams (personal, not repo-facing)
 ARCHITECTURE.md
